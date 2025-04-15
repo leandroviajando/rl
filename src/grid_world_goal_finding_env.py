@@ -3,10 +3,12 @@ from typing import Any, Final, Optional
 import gymnasium as gym
 import numpy as np
 
-from .agents import ActIndex, InfoType, ObsType, Reward
-from .minihack_envs import ACTION, ACTIONS, AGENT, FREE, GOAL
+from .agents import ActIndex, Reward, State
+from .minihack_envs import ACTION, ACTIONS, AGENT, FREE, GOAL, START, InfoType, ObsType
 
 action_space = gym.spaces.Discrete(len(ACTIONS))
+
+Coordinates = tuple[int, int]
 
 
 class Env(gym.Env[ObsType, ActIndex]):
@@ -20,13 +22,13 @@ class Env(gym.Env[ObsType, ActIndex]):
         self.num_rows: Final = n
         self.num_cols: Final = m
 
-        self.initial_position: Final[tuple[int, int]] = (0, 0)
-        self.goal_position: Final[tuple[int, int]] = (n - 1, m - 1)
+        self.start_position: Final[Coordinates] = (0, 0)
+        self.goal_position: Final[Coordinates] = (n - 1, m - 1)
         self.reward_per_action: Final[float] = -1.0
 
         observation, _ = self.reset()
         rows, cols = np.where(observation["chars"] == AGENT)
-        self.agent_position: tuple[int, int] = (int(rows[0]), int(cols[0]))
+        self.agent_position: Coordinates = (int(rows[0]), int(cols[0]))
 
     def step(self, action: ActIndex) -> tuple[ObsType, Reward, bool, bool, InfoType]:  # type: ignore[override]
         row, col = self.agent_position
@@ -46,7 +48,7 @@ class Env(gym.Env[ObsType, ActIndex]):
 
         return (
             {"chars": self._get_chars()},
-            0.0 if self.agent_position == self.goal_position else self.reward_per_action,
+            self.reward_per_action,
             self.agent_position == self.goal_position,
             False,
             {},
@@ -54,10 +56,10 @@ class Env(gym.Env[ObsType, ActIndex]):
 
     def reset(  # type: ignore[override]
         self, *, seed: Optional[int] = None, options: Optional[dict[str, Any]] = None
-    ) -> tuple[ObsType, InfoType]:
+    ) -> State:
         super().reset(seed=seed, options=options)
 
-        self.agent_position = self.initial_position
+        self.agent_position = self.start_position
 
         return {"chars": self._get_chars()}, {}
 
@@ -80,6 +82,7 @@ class Env(gym.Env[ObsType, ActIndex]):
 
     def _get_chars(self) -> np.ndarray:
         grid = FREE * np.ones((self.num_rows, self.num_cols), dtype=np.int8)
+        grid[self.start_position] = START
         grid[self.goal_position] = GOAL
         grid[self.agent_position] = AGENT
         return grid

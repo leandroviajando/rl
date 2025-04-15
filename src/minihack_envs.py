@@ -11,12 +11,15 @@ ACTIONS = tuple(ACTION)
 AGENT = 64
 FREE = 46
 GOAL = 62
+START = 60
 
 action_space = gym.spaces.Discrete(len(ACTIONS))
 
 ObsType = dict[Literal["chars"] | Literal["chars", "pixel"], np.ndarray]
-ActIndex = int
 InfoType = dict[Literal["end_status", "is_ascended"], Any]
+State = tuple[ObsType, InfoType]
+HashableState = bytes
+ActIndex = int
 
 
 EMPTY_ROOM = "empty-room"
@@ -219,9 +222,18 @@ def get_crop_pixel_from_observation(observation: ObsType) -> np.ndarray:
     return non_empty_pixels
 
 
-def plot_observations(state: tuple[ObsType, InfoType]) -> None:
+def plot_observations(state: State) -> None:
     observation, _ = state
+    chars = get_crop_chars_from_observation(observation)
+    pixels = get_crop_pixel_from_observation(observation)
 
-    print(get_crop_chars_from_observation(observation))
-    plt.imshow(get_crop_pixel_from_observation(observation))
+    print(chars)
+    plt.imshow(pixels)
     plt.show()
+
+
+def hashable(state: State) -> HashableState:
+    observation, _ = state
+    chars = get_crop_chars_from_observation(observation)
+
+    return chars.data.tobytes()

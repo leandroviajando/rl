@@ -13,4 +13,4 @@ dependencies:
       - gymnasium==1.0.0
       - minihack==1.0.0
       - pygame==2.6.1
-      - stable_baselines3==2.6.0
+      - stable_baselines3[extra]==2.6.0
